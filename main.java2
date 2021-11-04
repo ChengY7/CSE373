@@ -1,0 +1,117 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.*;
+
+public class main {
+    private static boolean[] allNumbers;
+    private static int n;
+    private static ArrayList<ArrayList<Integer>> allSubsets = new ArrayList<>();
+    private static ArrayList<ArrayList<Integer>> currentSolution= new ArrayList<>();
+    public static void main(String [] args) throws IOException {
+        long startTime = System.nanoTime();
+        BufferedReader br = new BufferedReader(new FileReader("s-rg-109-35"));
+        n = Integer.parseInt(br.readLine());
+        int numberSubsets = Integer.parseInt(br.readLine());
+        allSubsets = new ArrayList<>();
+        String line;
+        while ((line = br.readLine()) != null) {
+            String[] strArr = line.split("\\s+");
+            ArrayList<Integer> subset = new ArrayList<>();
+            for (int i=0; i<strArr.length; i++) {
+                if (!strArr[i].isEmpty()) {
+                    subset.add(Integer.parseInt(strArr[i]));
+                }
+            }
+
+            allSubsets.add(subset);
+        }
+        ArrayList<ArrayList<Integer>> currentAnswer = new ArrayList<>();
+        HashMap<Integer, ArrayList<ArrayList<Integer>>> haveToInclude = new HashMap<>();
+        for (ArrayList<Integer> subset : allSubsets) {
+            for (Integer number : subset) {
+                ArrayList<ArrayList<Integer>> temp = haveToInclude.get(number);
+                if (temp==null) {
+                    temp = new ArrayList<>();
+                    temp.add(subset);
+                } else {
+                    temp.add(subset);
+                }
+                haveToInclude.put(number, temp);
+            }
+        }
+        for (ArrayList<ArrayList<Integer>> sets : haveToInclude.values()) {
+            if (sets.size()==1) {
+                currentAnswer.add(sets.get(0));
+                allSubsets.remove(allSubsets.indexOf(sets.get(0)));
+            }
+        }
+        main test = new main();
+        test.backTrack(currentAnswer);
+        long stopTime = System.nanoTime();
+        System.out.println("Minimum set cover:");
+        for (ArrayList<Integer> subset : currentSolution) {
+            System.out.println(Arrays.toString(subset.toArray()));
+        }
+        System.out.println("Size: " + currentSolution.size());
+
+
+        System.out.println((stopTime - startTime)/1000000000.0);
+    }
+    public void backTrack(ArrayList<ArrayList<Integer>> currentAnswer) {
+        this.allNumbers= new boolean[this.n+1];
+        //boolean array to check if we have a solution the size is n+1 because were not using 0
+        for (int i=0; i<currentAnswer.size(); i++) { //each subsets in currentAnswer
+            for (int j=0; j<currentAnswer.get(i).size(); j++) { //each number in the subsets
+                this.allNumbers[currentAnswer.get(i).get(j)]=true;
+                //for each number inside each subsets in currentAnswer we updated allNumbers boolean array to true
+            }
+        }
+        if (is_a_solution(this.allNumbers)) {
+            //if we have a solution
+            if (this.currentSolution.isEmpty() || currentAnswer.size()<this.currentSolution.size()) {
+                //if current solution is empty or new solution is a smaller set then we update currentSolution
+                this.currentSolution = (ArrayList<ArrayList<Integer>>) currentAnswer.clone();
+            }
+        } else {
+            if (!this.currentSolution.isEmpty() && currentAnswer.size()>=this.currentSolution.size()) {
+                return;
+            }
+            //This gets the index of the allSubsets were up to
+            int counter = 0;
+            if (!currentAnswer.isEmpty()) {
+                //if currentAnswer is not empty
+                if (this.allSubsets.contains(currentAnswer.get(currentAnswer.size() - 1))) {
+                    //if last set of currentAnswer exist in allSubsets then counter = index of last set of sets in currentAnswer
+                    counter=this.allSubsets.indexOf(currentAnswer.get(currentAnswer.size()-1));
+                }
+            }
+            ArrayList<ArrayList<Integer>> candidates = new ArrayList<>();
+            //contains potential candidates
+            for (int i = counter; i<this.allSubsets.size(); i++) { //for allSubsets index at counter to last
+                ArrayList<Integer> currentSubset = this.allSubsets.get(i);
+                if (!currentAnswer.contains(this.allSubsets.get(i))) { //if currentAnswer doesn't contain the allSubsets[i]
+                    for (int j=0; j<currentSubset.size(); j++) { //for all numbers in the subset
+                        if (!this.allNumbers[currentSubset.get(j)]) { //if the number doesn't exist in allNumber boolean array
+                            candidates.add(currentSubset); //then add it as a candidates
+                            break;                         //break and continue looking for candidates
+                        }
+                    }
+                }
+            }
+            for (counter=0; counter<candidates.size(); counter++) {
+                currentAnswer.add(candidates.get(counter));
+                backTrack(currentAnswer);
+                currentAnswer.remove(currentAnswer.size()-1);
+            }
+        }
+    }
+    public boolean is_a_solution(boolean[] solution) {
+        for (int i=1; i<solution.length; i++) {
+            if (!solution[i]) {
+                return false; //if any index in the solution boolean is false then no solution
+            }
+        }
+        return true;
+    }
+}
